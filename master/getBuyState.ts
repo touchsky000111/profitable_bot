@@ -1,0 +1,155 @@
+import chalk from "chalk";
+import config from "../config/index";
+import Client, {
+    CommitmentLevel,
+    SubscribeRequestAccountsDataSlice,
+    SubscribeRequestFilterAccounts,
+    SubscribeRequestFilterBlocks,
+    SubscribeRequestFilterBlocksMeta,
+    SubscribeRequestFilterEntry,
+    SubscribeRequestFilterSlots,
+    SubscribeRequestFilterTransactions,
+} from "@triton-one/yellowstone-grpc";
+import { PublicKey } from "@solana/web3.js";
+import { setBuyState } from "./context";
+import bs58 from "bs58";
+
+// Interface for the subscription request structure
+interface SubscribeRequest {
+    accounts: { [key: string]: SubscribeRequestFilterAccounts };
+    slots: { [key: string]: SubscribeRequestFilterSlots };
+    transactions: { [key: string]: SubscribeRequestFilterTransactions };
+    transactionsStatus: { [key: string]: SubscribeRequestFilterTransactions };
+    blocks: { [key: string]: SubscribeRequestFilterBlocks };
+    blocksMeta: { [key: string]: SubscribeRequestFilterBlocksMeta };
+    entry: { [key: string]: SubscribeRequestFilterEntry };
+    commitment?: CommitmentLevel;
+    accountsDataSlice: SubscribeRequestAccountsDataSlice[];
+    ping?: any;
+}
+
+const STREAM_IDLE_TIMEOUT_MS = 60 * 1000;  // 1 min without data → close and reconnect
+const IDLE_CHECK_INTERVAL_MS = 15 * 1000;  // check every 15s
+
+async function handleStream(client: Client, args: SubscribeRequest) {
+    const stream = await client.subscribe();
+    let lastDataReceivedAt = Date.now();
+    let idleCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+    // Promise that resolves when the stream ends or errors out
+    const streamClosed = new Promise<void>((resolve, reject) => {
+        stream.on("error", (error) => {
+            if (idleCheckInterval) clearInterval(idleCheckInterval);
+            console.error("Stream error:", error);
+            reject(error);
+            stream.end();
+        });
+
+        stream.on("end", () => {
+            if (idleCheckInterval) clearInterval(idleCheckInterval);
+            resolve();
+        });
+        stream.on("close", () => {
+            if (idleCheckInterval) clearInterval(idleCheckInterval);
+            resolve();
+        });
+    });
+
+    // If no data for 1 min, close stream so subscribeCommand reconnects
+    idleCheckInterval = setInterval(() => {
+        if (Date.now() - lastDataReceivedAt >= STREAM_IDLE_TIMEOUT_MS) {
+            console.warn("PumpFun stream idle for 1 min, closing to reconnect...");
+            if (idleCheckInterval) clearInterval(idleCheckInterval);
+            stream.end();
+        }
+    }, IDLE_CHECK_INTERVAL_MS);
+
+    // Handle incoming transaction data
+    stream.on("data", (data) => {
+        lastDataReceivedAt = Date.now();
+
+        if (data?.account?.account) {
+
+            const bondingCurveAddress = bs58.encode(data.account.account.pubkey);
+            const bondingCurveAccountInfo = {
+                data: data.account.account.data,
+                executable: false,
+                lamports: Number(data.account.account.lamports),
+                owner: new PublicKey("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"),
+                rentEpoch: Number(data.account.account.rentEpoch),
+                space: data.account.account.data.length
+            }
+
+            setBuyState({
+                bondingCurveAddress,
+                bondingCurveAccountInfo,
+                bondingCurve: null,
+                creator: null
+            })
+
+        }
+    });
+
+    // Send the subscription request
+    await new Promise<void>((resolve, reject) => {
+        stream.write(args, (err: any) => {
+            err ? reject(err) : resolve();
+        });
+    }).catch((err) => {
+        console.error("Failed to send subscription request:", err);
+        throw err;
+    });
+
+    // Wait for the stream to close
+    await streamClosed;
+}
+
+/**
+ * Entry point to start the subscription stream.
+ *
+ */
+async function subscribeCommand(client: Client, args: SubscribeRequest) {
+    while (true) {
+        try {
+            console.log(chalk.green("💫") + ' Connecting to getBuyState Subscribe...');
+            await handleStream(client, args);
+        } catch (error) {
+            console.error("Stream error, retrying in 1 second...", error);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+    }
+}
+
+// Instantiate Yellowstone gRPC client with env credentials
+const client = new Client(
+    config.GRPC_URL, //Your Region specific gRPC URL
+    config.GRPC_TOKEN, // your Access Token
+    undefined,
+);
+
+/**
+ * Subscribe Request: The `blocks` filter will stream blocks which include those
+ * that involve the specified address in `accountInclude`.
+ */
+const req: SubscribeRequest = {
+    accounts: {
+        pumpfun: {
+            account: [],
+            filters: [],
+            owner: ["6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"], //account updates will be streamed for accounts with this owner
+        }
+    },
+    slots: {},
+    transactions: {},
+    transactionsStatus: {},
+    entry: {},
+    blocks: {},
+    blocksMeta: {},
+    accountsDataSlice: [],
+    commitment: CommitmentLevel.PROCESSED,
+};
+
+
+export const getBuyStateSubscribe = () => {
+    subscribeCommand(client, req);
+}
