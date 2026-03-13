@@ -70,11 +70,11 @@ export const initFastify = async (): Promise<FastifyInstance | false> => {
       startPumpfunStatusUpdater()
 
       getSharedConnection()
-      getSharedPumpSdk()
-      getBlockhash();
-      startSubscribePumpfun()
-      getBuyStateSubscribe()
-      startSubscribeTokenMonitoring();
+      // getSharedPumpSdk()
+      // getBlockhash();
+      // startSubscribePumpfun()
+      // getBuyStateSubscribe()
+      // startSubscribeTokenMonitoring();
     }
   } catch (error) {
     console.error(">> ERROR: Bot Backend error >> ", error);

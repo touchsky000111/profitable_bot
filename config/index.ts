@@ -23,7 +23,7 @@ const config = {
   JUPITER_WS_URL: 'wss://trench-stream.jup.ag/ws',
   WS_URL: "wss://pumpportal.fun/api/data",
   PUMPFUN_PROGRAMID: "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
-  backTest: false,
+  backTest: true,
   RAPID_DRAWDOWN_DROP_PERCENT: 30,
   slippage: 20, // default slippage for swap
   canBuy: 10,
