@@ -37,11 +37,8 @@ const config = {
   DATABASE_LENGTH: 30,
   DATABASE_NAME: "sniper",
   BACK_END_URL: 'http://95.217.63.103:9000',
-  REDIS_URL: "redis://localhost:6379",
   isSavedInDatabase: true,
   isSubscribeThroughWebsocket: false,
-  redisBlockHashKey: "solana:blockhash",
-  redisBlockHeightKey: "solana:blockHeight",
 };
 
 export default config;

@@ -10,7 +10,6 @@ import Client, {
   SubscribeRequestFilterSlots,
   SubscribeRequestFilterTransactions,
 } from "@triton-one/yellowstone-grpc";
-import Redis from "ioredis";
 import { SubscribeRequestPing } from "@triton-one/yellowstone-grpc/dist/types/grpc/geyser";
 import { setLatestBlockHash, setValidBlockHeight } from "./context";
 // Initialize Redis client

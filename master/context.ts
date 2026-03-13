@@ -1,7 +1,5 @@
 import { FastifyInstance } from "fastify";
 import { TokenDataInterface, SellPlan } from "../types/types";
-import Redis from "ioredis";
-import config from "../config/index";
 import { PublicKey, Connection, Keypair } from "@solana/web3.js";
 import {
         PumpSdk,
@@ -179,5 +177,3 @@ export const getWalletKeypair = (): Keypair => {
         if (!cachedKeypair) cachedKeypair = wallet();
         return cachedKeypair;
 };
-
-export const redisClient = new Redis(config.REDIS_URL);

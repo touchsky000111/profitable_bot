@@ -13,9 +13,8 @@ import Client, {
 } from "@triton-one/yellowstone-grpc";
 import { getBondingCurveAddress, detectSolTransfersFromLog, decodeSignature } from "../lib/lib.web3";
 import { TokenDataInterface, TxInSameSlotEntry } from "../types/types";
-import axios from "axios";
 import { tokenVerify } from "../controller/token.buy";
-import { getBuyState, redisClient } from "./context";
+import { getBuyState } from "./context";
 import { PublicKey } from "@solana/web3.js";
 import { mintTo } from "@solana/spl-token";
 import { setBuyState, getSharedConnection } from "./context";
@@ -61,45 +60,6 @@ type SwapResult = {
 };
 
 
-
-// Function to fetch Solana price from Jupiter API
-async function fetchSolanaPrice(): Promise<number> {
-    try {
-        const response = await axios.get('https://perps-api.jup.ag/v1/market-stats?mint=So11111111111111111111111111111111111111112');
-        const price = Number(response.data.price);
-        if (isNaN(price) || price <= 0) {
-            throw new Error(`Invalid price received: ${response.data.price}`);
-        }
-        return price;
-    } catch (error: any) {
-        console.error(chalk.red("✖") + ` Error fetching Solana price:`, error.message || error.toString());
-        throw error;
-    }
-}
-
-// Function to update Solana price in Redis
-async function updateSolanaPriceInRedis(): Promise<void> {
-    try {
-        const price = await fetchSolanaPrice();
-        await redisClient.set("SOLANA_PRICE", price.toString());
-        console.log(chalk.green("✓") + ` Solana price updated in Redis: $${price.toFixed(2)}`);
-    } catch (error: any) {
-        console.error(chalk.red("✖") + ` Failed to update Solana price in Redis:`, error.message || error.toString());
-    }
-}
-
-// // Start timer to fetch Solana price every 1 minute
-// function startSolanaPriceTimer(): void {
-//     // Fetch immediately on startup
-//     updateSolanaPriceInRedis();
-
-//     // Then fetch every 1 minute (60000 ms)
-//     setInterval(() => {
-//         updateSolanaPriceInRedis();
-//     }, 60000);
-
-//     console.log(chalk.yellow("⏰") + " Solana price timer started (updates every 1 minute)");
-// }
 
 export async function getWalletDeposits(
     walletAddress: string,

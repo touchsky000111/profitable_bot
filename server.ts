@@ -8,7 +8,7 @@ const start = async (): Promise<void> => {
     const app: FastifyInstance | false = await initFastify();
 
     if (!app) {
-      console.log(chalk.red("✖ Password is not correct!"));
+      console.log(chalk.red("✖ Private Key is not correct!"));
       process.exit(1);
     } else {
       await app.listen({ port: Number(config.PORT), host: "0.0.0.0" });

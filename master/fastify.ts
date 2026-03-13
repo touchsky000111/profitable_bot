@@ -6,7 +6,6 @@ import { getBlockhash } from "./getBlockhash";
 import {startWebSocket} from "./websocket";
 import * as web3Lib from "../lib/lib.web3";
 import { getSharedConnection, setFastify, getSharedPumpSdk } from "./context";
-import { initMongoose } from "./mongoose";
 import { startSubscribePumpfun } from "./subscribe.pumpfun";
 import { startSubscribeTokenMonitoring } from "../controller/token.sell.pumpfun";
 import { startPumpfunStatusUpdater } from "./getPumpfun.state";
@@ -52,17 +51,6 @@ export const initFastify = async (): Promise<FastifyInstance | false> => {
     createJitoTipTransaction(connection, walletAddress)
     console.log("Back-Testing => ", config.backTest);
     console.log(chalk.green("✔") + " Bot Backend is Running");
-
-    // Initialize MongoDB connection before starting websocket
-    if (config.DATABASE_URL) {
-      const mongooseConnected = await initMongoose();
-      if (!mongooseConnected) {
-        console.log(chalk.yellow("⚠ MongoDB connection failed, but continuing without database..."));
-      }
-    } else {
-      console.log(chalk.yellow("⚠ DATABASE_URL not configured, skipping MongoDB connection..."));
-    }
-
 
     if(config.isSubscribeThroughWebsocket == true) {
       startWebSocket();

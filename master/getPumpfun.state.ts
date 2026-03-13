@@ -32,7 +32,6 @@ export const startPumpfunStatusUpdater = async () => {
     await createJitoTipTransaction(web3Connection, keyPair)
     await getPumpfunStatus();
   } catch (e) {
-    console.error("Initial Pumpfun status fetch failed:", e);
   }
 
   // ✅ Then run every 60s
